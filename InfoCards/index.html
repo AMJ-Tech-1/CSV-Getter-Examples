@@ -1,0 +1,65 @@
+<style>
+	.card-container {
+	  display: grid;
+	  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+	  gap: 10px;
+	}
+	.card {
+	  border: 1px solid #ccc;
+	  padding: 15px;
+	  border-radius: 8px;
+	  background: #fff;
+	  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+	.card img {
+	  max-width: 100%;
+	  border-radius: 4px;
+	}
+	.card h3 {
+	  margin-top: 0;
+	}
+</style>
+
+<div id="card-container" class="card-container"></div>
+
+<script>
+	const apiUrl = "https://api.csvgetter.com/<your-endpoint-here>?type=json_records";
+
+	fetch(apiUrl)
+	  .then(response => response.json())
+	  .then(data => {
+		renderCards(data);
+	  })
+	  .catch(error => console.error('Error fetching data:', error));
+  
+	function renderCards(data) {
+		const container = document.getElementById('card-container');
+		let html = '';
+
+		data.forEach(item => {
+			const entries = Object.entries(item).filter(([key]) => key !== 'Images').slice(0, 4); // Get the first 4 entries, excluding 'Images'
+			const [titleKey, titleValue] = entries[0]; // Use the first entry as the title
+			const imageUrl = extractImageUrl(item.Images || '');
+
+			html += `
+				<div class="card">
+				  <img src="${imageUrl}" alt="Image" onerror="this.src='https://example.com/fallback-image.jpg';">
+				  <h3>${titleValue}</h3>
+				  ${entries.slice(1).map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`).join('')}
+				</div>
+			`;
+		});
+
+		container.innerHTML = html;
+	}
+  
+	function extractImageUrl(imageField) {
+	  if (typeof imageField === "string") {
+		const urlMatch = imageField.match(/'url':\s*'([^']+)'/) || imageField.match(/(https:\/\/[^"\s]+)/);
+		if (urlMatch) {
+		  return urlMatch[1]; // Return the extracted URL
+		}
+	  }
+	  return "https://example.com/fallback-image.jpg"; // Fallback image: insert your own here, change to 'null'
+	}
+</script>

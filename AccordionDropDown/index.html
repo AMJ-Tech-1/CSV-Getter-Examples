@@ -1,0 +1,87 @@
+
+<div id="accordion-container" style="max-width: 800px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
+
+<script>
+  const accordionApiUrl =
+    "https://api.csvgetter.com/<your-endpoint-here>?type=json_records";
+
+  fetch(accordionApiUrl)
+    .then((response) => response.json())
+    .then((data) => {
+      renderAccordion(data);
+    })
+    .catch((error) => console.error("Error fetching data:", error));
+
+  function renderAccordion(data) {
+    const container = document.getElementById("accordion-container");
+    let html = "";
+
+    data.forEach((item, index) => {
+      const entries = Object.entries(item).slice(0, 6);
+      const title = entries[0][1]; // Use the first value as the title
+
+      html += `
+        <div style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+          <button style="
+              width: 100%;
+              text-align: left;
+              padding: 15px;
+              border: none;
+              background-color: #0073aa;
+              color: #fff;
+              font-size: 16px;
+              cursor: pointer;
+              outline: none;
+              transition: background-color 0.3s;
+          "
+          onmouseover="this.style.backgroundColor='#005082'"
+          onmouseleave="this.style.backgroundColor='#0073aa'"
+          onclick="toggleAccordion(${index})">
+            ${title}
+          </button>
+          <div id="content-${index}" style="
+              display: none; /* Initially hidden */
+              padding: 15px;
+              background-color: #f9f9f9;
+              border-top: 1px solid #ddd;
+          ">
+            ${entries.slice(1).map(([key, value]) => renderContent(key, value)).join("")}
+          </div>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+  }
+
+  function renderContent(key, value) {
+    const imageUrl = extractImageUrl(value);
+    if (imageUrl) {
+      return `<div><strong>${key}:</strong><br><img src="${imageUrl}" alt="${key}" style="max-width: 100px; border-radius: 4px;"></div>`;
+    } else {
+      return `<p><strong>${key}:</strong> ${value}</p>`;
+    }
+  }
+
+  function extractImageUrl(value) {
+    if (typeof value === "string") {
+      // Check if the value contains an image URL pattern
+      const urlMatch = value.match(/"url":\s*"([^"]+)"/) || value.match(/(https:\/\/[^"\s]+)/);
+      if (urlMatch) {
+        return urlMatch[1]; // Return the extracted URL
+      }
+    }
+    return "https://example.com/fallback-image.jpg"; // Fallback image: insert your own here, change to 'null'
+  }
+
+  function toggleAccordion(index) {
+    const content = document.getElementById(`content-${index}`);
+
+    document.querySelectorAll(`[id^="content-"]`).forEach((section, i) => {
+      if (i !== index) {
+        section.style.display = "none";
+      }
+    });
+
+    content.style.display = content.style.display === "none" ? "block" : "none";
+  }
+</script>

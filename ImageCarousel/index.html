@@ -1,0 +1,82 @@
+<div id="carousel-container" style="max-width: 600px; margin: 20px auto; position: relative;">
+	<div id="carousel-images" style="display: flex; transition: transform 0.5s ease;">
+	  <!-- Images will be inserted here -->
+	</div>
+	<button id="prev" onclick="prevSlide()" style="position: absolute; top: 50%; left: 10px; transform: translateY(-50%); background: rgba(0, 0, 0, 0.5); color: #fff; border: none; padding: 10px; cursor: pointer;">&#10094;</button>
+	<button id="next" onclick="nextSlide()" style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: rgba(0, 0, 0, 0.5); color: #fff; border: none; padding: 10px; cursor: pointer;">&#10095;</button>
+</div>
+
+<script>
+	const carouselApiUrl =  "https://api.csvgetter.com/<your-endpoint-here>?type=json_records";
+  
+	fetch(carouselApiUrl)
+	  .then(response => response.json())
+	  .then(data => {
+		renderCarousel(data);
+	  })
+	  .catch(error => console.error("Error fetching data:", error));
+  
+	let currentSlide = 0;
+  
+	function renderCarousel(data) {
+	  const container = document.getElementById("carousel-images");
+	  let html = "";
+  
+	  data.forEach(item => {
+		const imageUrl = extractImageUrl(item.Images);
+		if (imageUrl) {
+		  html += `
+			<div class="carousel-slide" style="min-width: 100%; box-sizing: border-box;">
+			  <img src="${imageUrl}" alt="${item["Product Name"] || 'Image'}" style="width: 100%; border-radius: 8px;">
+			</div>
+		  `;
+		}
+	  });
+  
+	  container.innerHTML = html;
+	  updateCarousel();
+	}
+  
+	function updateCarousel() {
+	  const container = document.getElementById("carousel-images");
+	  container.style.transform = `translateX(-${currentSlide * 100}%)`;
+	}
+  
+	function nextSlide() {
+	  const totalSlides = document.querySelectorAll(".carousel-slide").length;
+	  currentSlide = (currentSlide + 1) % totalSlides;
+	  updateCarousel();
+	}
+  
+	function prevSlide() {
+	  const totalSlides = document.querySelectorAll(".carousel-slide").length;
+	  currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+	  updateCarousel();
+	}
+  
+	function extractImageUrl(imageField) {
+	  if (typeof imageField === "string") {
+		const urlMatch = imageField.match(/'url':\s*'([^']+)'/) || imageField.match(/(https:\/\/[^"\s]+)/);
+		if (urlMatch) {
+		  return urlMatch[1]; // Return the extracted URL
+		}
+	  }
+	  return "https://example.com/fallback-image.jpg"; // Fallback image: insert your own here, change to 'null'
+	}
+</script>
+
+<style>
+	#carousel-container {
+	  overflow: hidden;
+	  position: relative;
+	}
+  
+	#carousel-images {
+	  display: flex;
+	  transition: transform 0.5s ease;
+	}
+  
+	.carousel-slide img {
+	  border-radius: 8px;
+	}
+</style>
