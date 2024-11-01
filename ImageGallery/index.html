@@ -22,7 +22,7 @@
         
         html += `
           <div class="gallery-card">
-            <img src="${imageUrl}" alt="${item["Product Name"] || 'Image'}" class="gallery-image">
+            <img src="${imageUrl}" alt="Image" class="gallery-image">
             <div class="overlay">
               ${infoEntries.map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`).join("")}
             </div>
