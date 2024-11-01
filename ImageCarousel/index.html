@@ -1,4 +1,5 @@
-<div id="carousel-container" style="max-width: 600px; margin: 20px auto; position: relative;">
+<div id="loading-message" style="text-align: center; padding: 20px; font-size: 18px;">Loading images, please wait...</div>
+<div id="carousel-container" style="max-width: 600px; min-height: 400px; margin: 20px auto; position: relative; display: none;">
 	<div id="carousel-images" style="display: flex; transition: transform 0.5s ease;">
 	  <!-- Images will be inserted here -->
 	</div>
@@ -7,7 +8,7 @@
 </div>
 
 <script>
-	const carouselApiUrl =  "https://api.csvgetter.com/<your-endpoint-here>?type=json_records";
+	const carouselApiUrl = "https://api.csvgetter.com/<your-endpoint-here>?type=json_records";
   
 	fetch(carouselApiUrl)
 	  .then(response => response.json())
@@ -20,10 +21,20 @@
   
 	function renderCarousel(data) {
 	  const container = document.getElementById("carousel-images");
+	  const loadingMessage = document.getElementById("loading-message");
 	  let html = "";
   
 	  data.forEach(item => {
-		const imageUrl = extractImageUrl(item.Images);
+		let imageUrl = null;
+
+		// Check each field in the data object to find an image URL
+		for (const [key, value] of Object.entries(item)) {
+		  if (checkDataType(value) === "image") {
+			imageUrl = extractImageUrl(value);
+			break;
+		  }
+		}
+
 		if (imageUrl) {
 		  html += `
 			<div class="carousel-slide" style="min-width: 100%; box-sizing: border-box;">
@@ -35,6 +46,10 @@
   
 	  container.innerHTML = html;
 	  updateCarousel();
+
+	  // Hide the loading message and show the carousel container
+	  loadingMessage.style.display = "none";
+	  document.getElementById("carousel-container").style.display = "block";
 	}
   
 	function updateCarousel() {
@@ -54,14 +69,26 @@
 	  updateCarousel();
 	}
   
+	function checkDataType(recordData) {
+	  try {
+		const parsedData = JSON.parse(recordData.replace(/'/g, '"')); // Replace single quotes for valid JSON parsing
+		if (parsedData && parsedData.url && parsedData.width && parsedData.height) {
+		  return "image";
+		}
+	  } catch (error) {
+		console.log("Data is not in JSON format");
+	  }
+	  return "string";
+	}
+
 	function extractImageUrl(imageField) {
 	  if (typeof imageField === "string") {
-		const urlMatch = imageField.match(/'url':\s*'([^']+)'/) || imageField.match(/(https:\/\/[^"\s]+)/);
+		const urlMatch = imageField.match(/"url":\s*"([^"]+)"/) || imageField.match(/(https:\/\/[^"\s]+)/);
 		if (urlMatch) {
 		  return urlMatch[1]; // Return the extracted URL
 		}
 	  }
-	  return "https://example.com/fallback-image.jpg"; // Fallback image: insert your own here, change to 'null'
+	  return "https://example.com/fallback-image.jpg"; // Fallback image
 	}
 </script>
 

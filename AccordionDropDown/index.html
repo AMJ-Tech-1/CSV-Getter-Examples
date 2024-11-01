@@ -1,9 +1,8 @@
-
-<div id="accordion-container" style="max-width: 800px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
+<div id="loading-message" style="text-align: center; padding: 20px; font-size: 18px;">Loading data, please wait...</div>
+<div id="accordion-container" style="max-width: 800px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; display: none;"></div>
 
 <script>
-  const accordionApiUrl =
-    "https://api.csvgetter.com/<your-endpoint-here>?type=json_records";
+  const accordionApiUrl = "https://api.csvgetter.com/<your-endpoint-here>?type=json_records";
 
   fetch(accordionApiUrl)
     .then((response) => response.json())
@@ -14,10 +13,11 @@
 
   function renderAccordion(data) {
     const container = document.getElementById("accordion-container");
+    const loadingMessage = document.getElementById("loading-message");
     let html = "";
 
     data.forEach((item, index) => {
-      const entries = Object.entries(item).slice(0, 6);
+      const entries = Object.entries(item).slice(0, 6); // Get the first 6 fields for display
       const title = entries[0][1]; // Use the first value as the title
 
       html += `
@@ -50,27 +50,41 @@
         </div>
       `;
     });
+
     container.innerHTML = html;
+    loadingMessage.style.display = "none"; // Hide the loading message
+    container.style.display = "grid"; // Show the accordion container
   }
 
   function renderContent(key, value) {
-    const imageUrl = extractImageUrl(value);
-    if (imageUrl) {
+    if (checkDataType(value) === "image") {
+      const imageUrl = extractImageUrl(value);
       return `<div><strong>${key}:</strong><br><img src="${imageUrl}" alt="${key}" style="max-width: 100px; border-radius: 4px;"></div>`;
     } else {
       return `<p><strong>${key}:</strong> ${value}</p>`;
     }
   }
 
+  function checkDataType(recordData) {
+    try {
+      const parsedData = JSON.parse(recordData.replace(/'/g, '"')); // Replace single quotes for valid JSON parsing
+      if (parsedData && parsedData.url && parsedData.width && parsedData.height) {
+        return "image";
+      }
+    } catch (error) {
+      console.log("Data is not in JSON format");
+    }
+    return "string";
+  }
+
   function extractImageUrl(value) {
     if (typeof value === "string") {
-      // Check if the value contains an image URL pattern
       const urlMatch = value.match(/"url":\s*"([^"]+)"/) || value.match(/(https:\/\/[^"\s]+)/);
       if (urlMatch) {
         return urlMatch[1]; // Return the extracted URL
       }
     }
-    return "https://example.com/fallback-image.jpg"; // Fallback image: insert your own here, change to 'null'
+    return "https://example.com/fallback-image.jpg"; // Fallback image
   }
 
   function toggleAccordion(index) {

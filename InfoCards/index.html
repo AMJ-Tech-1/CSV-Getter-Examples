@@ -1,3 +1,6 @@
+<div id="loading-message" style="text-align: center; padding: 20px; font-size: 18px;">Loading data, please wait...</div>
+<div id="card-container" class="card-container" style="display: none;"></div>
+
 <style>
 	.card-container {
 	  display: grid;
@@ -20,8 +23,6 @@
 	}
 </style>
 
-<div id="card-container" class="card-container"></div>
-
 <script>
 	const apiUrl = "https://api.csvgetter.com/<your-endpoint-here>?type=json_records";
 
@@ -34,16 +35,25 @@
   
 	function renderCards(data) {
 		const container = document.getElementById('card-container');
+		const loadingMessage = document.getElementById('loading-message');
 		let html = '';
 
 		data.forEach(item => {
-			const entries = Object.entries(item).filter(([key]) => key !== 'Images').slice(0, 4); // Get the first 4 entries, excluding 'Images'
+			// Dynamically find the image field using checkDataType
+			let imageUrl = null;
+			for (const [key, value] of Object.entries(item)) {
+				if (checkDataType(value) === "image") {
+					imageUrl = extractImageUrl(value);
+					break;
+				}
+			}
+
+			const entries = Object.entries(item).filter(([key]) => key !== 'Images' && key !== 'Logo').slice(0, 4); // Get the first 4 entries, excluding image fields
 			const [titleKey, titleValue] = entries[0]; // Use the first entry as the title
-			const imageUrl = extractImageUrl(item.Images || '');
 
 			html += `
 				<div class="card">
-				  <img src="${imageUrl}" alt="Image" onerror="this.src='https://example.com/fallback-image.jpg';">
+				  <img src="${imageUrl || 'https://example.com/fallback-image.jpg'}" alt="Image" onerror="this.src='https://example.com/fallback-image.jpg';">
 				  <h3>${titleValue}</h3>
 				  ${entries.slice(1).map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`).join('')}
 				</div>
@@ -51,8 +61,24 @@
 		});
 
 		container.innerHTML = html;
+		loadingMessage.style.display = "none";
+		container.style.display = "grid";
 	}
   
+	// Helper function to identify image data based on expected attributes
+	function checkDataType(recordData) {
+	  try {
+		const parsedData = JSON.parse(recordData.replace(/'/g, '"')); // Replace single quotes for valid JSON parsing
+		if (parsedData && parsedData.url && parsedData.width && parsedData.height) {
+		  return "image";
+		}
+	  } catch (error) {
+		console.log("Data is not in JSON format");
+	  }
+	  return "string";
+	}
+
+	// Helper function to extract the image URL from the image data
 	function extractImageUrl(imageField) {
 	  if (typeof imageField === "string") {
 		const urlMatch = imageField.match(/'url':\s*'([^']+)'/) || imageField.match(/(https:\/\/[^"\s]+)/);
@@ -60,6 +86,6 @@
 		  return urlMatch[1]; // Return the extracted URL
 		}
 	  }
-	  return "https://example.com/fallback-image.jpg"; // Fallback image: insert your own here, change to 'null'
+	  return "https://example.com/fallback-image.jpg"; // Fallback image
 	}
 </script>
