@@ -38,6 +38,20 @@ This component renders individual cards with images and relevant details, dynami
 - **Features**: Responsive card layout, image integration, auto-generated content based on endpoint data.
 - **Use case**: Team bios, product summaries, service highlights, event previews.
 
+### 4. SearchItems
+
+This component allows you to search the data returned from your endpoint and renders individual cards with the json objects that match the search query. Each card displays the full object and searches keys and values, making it a flexible solution for querying.
+
+- **Features**: Responsive card layout, single image integration, returns all content from the object that matches.
+- **Use case**: Searching large datasets, displaying data, displaying single images.
+
+### 4. Table
+
+This component renders a dynamic table, populated by the data in your CSV Getter endpoint. The table can be queried with a search bar, while also filtered by count. The result is a powerfull tool for querying and displaying all data. Not suitable for use with image data.
+
+- **Features**: Displays all data, offers search and limit functionality, ability to order individual columns.
+- **Use case**: When all data is required, when basic ordering and filtering can be useful, searching and comparing data.
+
 ## Installation and Usage
 
 1. **Add Your CSV Getter Endpoint**: Each component includes an API URL variable where you should input your CSV Getter endpoint URL. Replace the sample URLs with your specific endpoint.

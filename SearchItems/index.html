@@ -1,0 +1,241 @@
+<div id="search-widget">
+    <input
+        id="search-bar"
+        type="text"
+        placeholder="Enter your search query..."
+        style="width: 80%; padding: 10px; margin-bottom: 10px; font-size: 16px;"
+    />
+    <button
+        id="search-button"
+        style="width: 18%; padding: 10px; font-size: 16px; cursor: pointer;"
+    >
+        Search
+    </button>
+    <div id="loading-message" style="text-align: center; padding: 20px; font-size: 18px;">
+        Loading data, please wait...
+    </div>
+    <div id="search-results" style="display: none;"></div>
+</div>
+
+<style>
+    #search-results {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .result-card {
+        width: calc(100% / 3 - 20px);
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #f9f9f9;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+        box-sizing: border-box;
+    }
+
+    .carousel-container {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .carousel-images {
+        display: flex;
+        transition: transform 0.5s ease;
+    }
+
+    .carousel-slide img {
+        max-width: 100%;
+        border-radius: 8px;
+    }
+
+    .carousel-button {
+        position: absolute;
+        top: 50%;
+        background: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        transform: translateY(-50%);
+    }
+
+    .carousel-button.left {
+        left: 10px;
+    }
+
+    .carousel-button.right {
+        right: 10px;
+    }
+
+    .result-card-content {
+        text-align: left;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        white-space: pre-wrap;
+        margin-top: 10px;
+    }
+
+    @media (max-width: 768px) {
+        .result-card {
+            width: calc(100% / 2 - 20px);
+        }
+    }
+
+    @media (max-width: 480px) {
+        .result-card {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const apiEndpoint = "https://api.csvgetter.com/<your-endpoint-here>?type=json_records&wordpress_snippet=search"; // Replace with your endpoint URL
+        let dataCache = [];
+
+        fetch(apiEndpoint)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                dataCache = data;
+                document.getElementById("loading-message").style.display = "none";
+            })
+            .catch((error) => {
+                console.error("Error fetching data:", error);
+                document.getElementById("loading-message").innerText = "Failed to load data.";
+            });
+
+        document.getElementById("search-button").addEventListener("click", () => {
+            const query = document.getElementById("search-bar").value.toLowerCase();
+
+            if (!query) {
+                alert("Please enter a search term.");
+                return;
+            }
+
+            const filteredData = dataCache.filter((item) =>
+                Object.entries(item).some(([key, value]) =>
+                    key.toLowerCase().includes(query) || String(value).toLowerCase().includes(query)
+                )
+            );
+
+            renderResults(filteredData);
+        });
+
+        function renderResults(data) {
+            const resultsContainer = document.getElementById("search-results");
+
+            if (!data.length) {
+                resultsContainer.style.display = "block";
+                resultsContainer.innerHTML = "<p>No results found.</p>";
+                return;
+            }
+
+            let html = "";
+            data.forEach((item) => {
+                const images = extractAllImages(item);
+                let filteredItem = { ...item };
+
+                if (images.length > 0) {
+                    delete filteredItem.Images; // Remove images field if displayed
+                }
+
+                html += `<div class="result-card">`;
+
+                if (images.length > 0) {
+                    html += `<div class="carousel-container">
+                        <div class="carousel-images">${images
+                            .map(
+                                (url) =>
+                                    `<div class="carousel-slide"><img src="${url}" alt="Image"></div>`
+                            )
+                            .join("")}</div>
+                        <button class="carousel-button left" onclick="carouselPrev(this)">&#10094;</button>
+                        <button class="carousel-button right" onclick="carouselNext(this)">&#10095;</button>
+                    </div>`;
+                }
+
+                html += `<div class="result-card-content">${renderObjectAsHTML(filteredItem)}</div>`;
+                html += `</div>`;
+            });
+
+            resultsContainer.style.display = "flex";
+            resultsContainer.innerHTML = html;
+        }
+
+        function renderObjectAsHTML(obj) {
+            return Object.entries(obj)
+                .map(
+                    ([key, value]) =>
+                        `<strong>${key}:</strong> ${
+                            typeof value === "object" ? JSON.stringify(value, null, 2) : value
+                        }`
+                )
+                .join("<br>");
+        }
+
+        function extractAllImages(item) {
+            const images = [];
+            for (const [key, value] of Object.entries(item)) {
+                if (checkDataType(value) === "image") {
+                    images.push(extractImageUrl(value));
+                }
+            }
+            return images;
+        }
+
+        function checkDataType(recordData) {
+            try {
+                const parsedData = JSON.parse(recordData.replace(/'/g, '"'));
+                if (parsedData && parsedData.url) {
+                    return "image";
+                }
+            } catch (error) {
+                console.log("Data is not in JSON format");
+            }
+            return "string";
+        }
+
+        function extractImageUrl(imageField) {
+            if (typeof imageField === "string") {
+                const urlMatch = imageField.match(/"url":\s*"([^"]+)"/) || imageField.match(/(https:\/\/[^"\s]+)/);
+                if (urlMatch) {
+                    return urlMatch[1];
+                }
+            }
+            return null;
+        }
+
+        window.carouselNext = (btn) => {
+            const container = btn.previousElementSibling;
+            const slides = container.children.length;
+            const currentTransform = getComputedStyle(container).transform;
+            const currentIndex = Math.round(
+                Math.abs(parseInt(currentTransform.split(",")[4] || 0)) / container.offsetWidth
+            );
+            const nextIndex = (currentIndex + 1) % slides;
+            container.style.transform = `translateX(-${nextIndex * 100}%)`;
+        };
+
+        window.carouselPrev = (btn) => {
+            const container = btn.previousElementSibling.previousElementSibling;
+            const slides = container.children.length;
+            const currentTransform = getComputedStyle(container).transform;
+            const currentIndex = Math.round(
+                Math.abs(parseInt(currentTransform.split(",")[4] || 0)) / container.offsetWidth
+            );
+            const prevIndex = (currentIndex - 1 + slides) % slides;
+            container.style.transform = `translateX(-${prevIndex * 100}%)`;
+        };
+    });
+</script>

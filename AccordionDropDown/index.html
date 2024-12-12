@@ -2,7 +2,7 @@
 <div id="accordion-container" style="max-width: 800px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; display: none;"></div>
 
 <script>
-  const accordionApiUrl = "https://api.csvgetter.com/<your-endpoint-here>?type=json_records";
+  const accordionApiUrl = "https://api.csvgetter.com/<your-endpoint-here>?type=json_records&wordpress_snippet=accordion";
 
   fetch(accordionApiUrl)
     .then((response) => response.json())
